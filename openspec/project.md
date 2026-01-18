@@ -23,24 +23,22 @@ Desarrollar una aplicación móvil multiplataforma (iOS/Android) que resuelva el
 
 ### Frontend/Mobile
 - **React Native** - Framework principal para desarrollo multiplataforma
-- **Expo** (opcional) - Toolchain para desarrollo y despliegue simplificado
 - **TypeScript** - Lenguaje de programación principal
 - **React Navigation** - Navegación entre pantallas
 - **React Native Maps** - Visualización de mapas y geolocalización
 
 ### UI/UX
-- **React Native Paper** o **NativeBase** - Componentes UI
-- **styled-components** o **Tailwind CSS (NativeWind)** - Estilos
+- **React Native Paper** - Componentes UI
+- **Tailwind CSS (NativeWind)** - Estilos
 - **React Native Gesture Handler** - Interacciones táctiles
 
 ### Estado y Datos
 - **React Query (TanStack Query)** - Gestión de datos asíncronos y caché
-- **Zustand** o **Redux Toolkit** - Estado global de la aplicación
+- **Redux Toolkit** - Estado global de la aplicación
 - **AsyncStorage** - Persistencia local de datos
 
 ### IA y Servicios Backend
-- **Anthropic Claude API** - Agente conversacional principal
-- **OpenAI API** (alternativa/complemento) - Procesamiento de lenguaje natural
+- **OpenAI API** - Agente conversacional principal
 - **Firebase** - Backend as a Service (autenticación, Firestore, Cloud Functions)
 - **Axios** - Cliente HTTP para consumo de APIs
 
@@ -56,8 +54,8 @@ Desarrollar una aplicación móvil multiplataforma (iOS/Android) que resuelva el
 - **React Native Local Notifications** - Alarmas programadas
 
 ### APIs Externas
-- **API Farmacias Chile** - Listado completo de farmacias con direcciones
-- **API Turnos Chile** - Farmacias de turno actualizadas diariamente
+- **API Farmacias Chile** - Listado completo de farmacias con direcciones "https://midas.minsal.cl/farmacia_v2/WS/getLocales.php" se puede obtener una vez y dejarlo cargado y actualizarse de forma batch una vez al día, para que no se consulte la API en cada momento, solo una vez al día y la aplicación trabaje con la información que tiene en un base de conocimiento interno
+- **API Turnos Chile** - Farmacias de turno actualizadas diariamente "https://midas.minsal.cl/farmacia_v2/WS/getLocalesTurnos.php" se puede obtener una vez y dejarlo cargado y actualizarse de forma batch una vez al día, para que no se consulte la API en cada momento, solo una vez al día y la aplicación trabaje con la información que tiene en un base de conocimiento interno
 - **Google Maps Platform** - Geocoding, Directions, Places API
 - **Waze Deep Links** - Navegación alternativa
 
@@ -68,10 +66,7 @@ Desarrollar una aplicación móvil multiplataforma (iOS/Android) que resuelva el
 - **MSW (Mock Service Worker)** - Mocking de APIs
 
 ### DevOps
-- **Fastlane** - Automatización de builds y despliegues
-- **GitHub Actions** o **GitLab CI/CD** - Integración continua
-- **Sentry** - Monitoreo de errores en producción
-- **Firebase Analytics** - Métricas de uso
+- necesito un script que me permita compilar la imagen para Android e IOS y subirla manualmente en modo developer al un movil.
 
 ## Project Conventions
 
@@ -293,38 +288,6 @@ describe('Emergency Pharmacy Search', () => {
 });
 ```
 
-#### Estrategias Específicas
-
-**API Mocking**
-```typescript
-// __mocks__/api/pharmacy-api.mock.ts
-export const mockPharmacyApi = {
-  getOnDuty: jest.fn().mockResolvedValue(mockOnDutyPharmacies),
-  getNearby: jest.fn().mockResolvedValue(mockNearbyPharmacies),
-};
-```
-
-**IA Testing**
-- Mocks de respuestas de Claude API
-- Casos de prueba con prompts predefinidos
-- Validación de formato de respuestas
-- Tests de fallback cuando IA no está disponible
-
-**Testing de Geolocalización**
-```typescript
-jest.mock('react-native-geolocation-service', () => ({
-  getCurrentPosition: jest.fn((success) => 
-    success({ coords: { latitude: -33.4489, longitude: -70.6693 } })
-  ),
-}));
-```
-
-#### Coverage Requirements
-- Mínimo 70% cobertura global
-- 90% en servicios críticos (AI, API, cálculos de distancia)
-- 100% en lógica de interacciones medicamentosas
-- Smoke tests obligatorios antes de cada deploy
-
 ### Git Workflow
 
 #### Branching Strategy (Git Flow modificado)
@@ -371,45 +334,6 @@ refactor(ai): extract medication analysis to separate service
 test(pharmacy): add unit tests for distance calculation
 chore(deps): upgrade react-native to 0.73
 perf(map): optimize pharmacy marker rendering
-```
-
-#### Pull Request Process
-
-1. **Crear PR desde feature branch a develop**
-2. **Template de PR debe incluir**:
-    - Descripción de cambios
-    - Issue relacionado (si aplica)
-    - Screenshots/videos para cambios UI
-    - Checklist:
-        - [ ] Tests agregados/actualizados
-        - [ ] Documentación actualizada
-        - [ ] Code review self-review completado
-        - [ ] No hay console.logs/debuggers
-        - [ ] Build exitoso en Android/iOS
-
-3. **Revisión requerida**: Mínimo 1 aprobación
-4. **CI debe pasar**: Tests, linting, build
-5. **Merge strategy**: Squash and merge a develop
-6. **Deploy a producción**: Solo desde `main` via release branch
-
-#### Release Process
-```bash
-# 1. Crear release branch desde develop
-git checkout -b release/v1.2.0 develop
-
-# 2. Actualizar versiones y CHANGELOG
-# package.json, app.json, CHANGELOG.md
-
-# 3. Merge a main y develop
-git checkout main
-git merge --no-ff release/v1.2.0
-git tag -a v1.2.0 -m "Release version 1.2.0"
-
-git checkout develop
-git merge --no-ff release/v1.2.0
-
-# 4. Delete release branch
-git branch -d release/v1.2.0
 ```
 
 ## Domain Context
@@ -554,7 +478,7 @@ Sistema:
 - **Google Maps API**:
     - Límite gratuito: 28,000 cargas de mapa/mes
     - Costo posterior: $7 USD por 1000 requests adicionales
-- **Claude API**:
+- **OpenAI API**:
     - Rate limits según tier contratado
     - Costo por token (input/output)
     - Latencia promedio 2-5 segundos
@@ -651,32 +575,8 @@ Sistema:
 - **Cache requerido**: Mínimo 1 hora
 - **Fallback**: Mostrar aviso "Información puede estar desactualizada"
 
-#### 3. Anthropic Claude API
-- **URL Base**: `https://api.anthropic.com/v1/`
-- **Modelo**: `claude-3-5-sonnet-20241022` (o latest)
-- **Autenticación**: Bearer token en header
-- **Endpoints principales**:
-  ```
-  POST /messages - Crear conversación
-  ```
-- **Rate Limits** (según tier):
-    - Free tier: 50 requests/día
-    - Pro tier: 1000 requests/día
-- **Pricing**:
-    - Input: $3 / 1M tokens
-    - Output: $15 / 1M tokens
-- **Latencia promedio**: 2-5 segundos
-- **Context window**: 200k tokens
-- **Funciones clave**:
-    - Análisis de recetas médicas
-    - Detección de interacciones medicamentosas
-    - Generación de horarios óptimos de toma
-    - Recomendación de bioequivalentes
-    - Respuestas conversacionales naturales
-- **Fallback**: Respuestas predefinidas para casos comunes + sugerencia de consultar QF
-
-#### 4. Google Maps Platform
-**4.1 Maps SDK (Mobile)**
+#### 3. Google Maps Platform
+**3.1 Maps SDK (Mobile)**
 - **Documentación**: https://developers.google.com/maps/documentation/android-sdk
 - **API Keys**: Separadas para Android/iOS en Google Cloud Console
 - **Funcionalidades**:
@@ -686,24 +586,24 @@ Sistema:
 - **Límite gratuito**: 28,000 dynamic map loads/mes
 - **Costo excedente**: $7 USD / 1000 loads
 
-**4.2 Geocoding API**
+**3.2 Geocoding API**
 - **Endpoint**: `https://maps.googleapis.com/maps/api/geocode/json`
 - **Uso**: Convertir direcciones de farmacias a coordenadas
 - **Límite**: 40,000 requests/mes gratis
 - **Cache**: Obligatorio por ToS (cachear resultados)
 
-**4.3 Directions API**
+**3.3 Directions API**
 - **Endpoint**: `https://maps.googleapis.com/maps/api/directions/json`
 - **Uso**: Calcular rutas y distancias
 - **Límite**: 40,000 requests/mes gratis
 - **Optimización**: Usar Distance Matrix para múltiples destinos
 
-**4.4 Places API**
+**3.4 Places API**
 - **Uso**: Información adicional de farmacias (fotos, reviews, horarios)
 - **Opcional**: Para enriquecer datos
 - **Límite**: 28,000 requests/mes gratis
 
-#### 5. ISP Chile - Base de Datos Bioequivalentes
+#### 4. ISP Chile - Base de Datos Bioequivalentes
 - **URL**: `https://www.ispch.cl/bioequivalencia` (web scraping o API si disponible)
 - **Tipo**: Posiblemente scraping de sitio público o solicitar API oficial
 - **Datos**:
@@ -784,63 +684,3 @@ https://waze.com/ul?ll={lat},{lng}&navigate=yes
 ```
 http://maps.apple.com/?daddr={lat},{lng}&dirflg=d
 ```
-
-### Servicios Opcionales/Futuros
-
-#### Twilio (Comunicación)
-- Envío de SMS con información de farmacia
-- Llamadas automáticas en emergencias (futuro)
-
-#### SendGrid (Email)
-- Envío de reportes semanales de adherencia
-- Exportar historial de medicamentos
-
-#### OpenAI Vision API
-- OCR avanzado de recetas médicas
-- Reconocimiento de logos de medicamentos
-- Fallback si Claude no tiene vision capabilities
-
-#### Stripe (Pagos - Fase Premium futura)
-- Suscripciones premium
-- Integración con farmacias para delivery
-
-### Dependencias de Desarrollo
-
-#### Fastlane
-- Automatización de builds iOS/Android
-- Subida automática a App Store/Play Store
-- Screenshots automatizados
-- Manejo de certificados y provisioning profiles
-
-#### CodePush (App Center)
-- Hot updates para JavaScript bundle
-- Deploy de fixes sin pasar por review de stores
-- Rollback instantáneo en caso de problemas
-
-### Consideraciones de Vendor Lock-in
-
-**Alto riesgo** (difícil migrar):
-- Firebase (considerado aceptable por ecosistema maduro)
-- Google Maps (alternativa: Mapbox, Apple Maps)
-
-**Medio riesgo**:
-- Claude API (alternativa: GPT-4, Gemini)
-- SendGrid (alternativa: AWS SES, Mailgun)
-
-**Bajo riesgo**:
-- Sentry (alternativa: Rollbar, Bugsnag)
-- Analytics (alternativa: Mixpanel, Amplitude)
-
-### Monitoreo de Dependencias Externas
-
-**Health Checks requeridos**:
-- Ping diario a APIs críticas (Farmacias, Turnos)
-- Monitor de latencia de Claude API
-- Alert si Google Maps API excede 80% de quota
-- Dashboard con uptime de últimos 30 días
-
-**Estrategia de degradación**:
-1. API Farmacias down → Usar cache + warning
-2. Claude API down → Respuestas predefinidas + limitar funcionalidades IA
-3. Google Maps down → Usar Apple Maps en iOS, mostrar direcciones en texto
-4. Firebase down → Modo offline con AsyncStorage
