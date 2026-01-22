@@ -328,9 +328,116 @@ Scenario: User denies location, then cannot find pharmacies.
 - If notification system breaks: disable reminders, show manual checklist
 - If maps crash: show list view with distance sorting
 
+## AI Scope Enforcement Strategy (Phase 2)
+
+Per project.md constraint (line 516), when Phase 2 implements the full AI medication advisor, the system MUST limit the AI to medication/pharmacy topics only.
+
+### Implementation Approach
+
+**1. System Prompt Design**
+```
+You are an expert medication and pharmacy assistant for Chilean users.
+
+Your role:
+- Answer questions about medications, dosages, frequencies, and side effects
+- Provide information about nearby pharmacies, on-duty status, and locations
+- Suggest bioequivalent alternatives when available
+- Explain medication interactions and food interactions
+- Help users understand optimal medication timing
+
+Your boundaries:
+- You ONLY answer questions about medications and pharmacies
+- Do NOT provide general medical diagnosis or treatment advice
+- Do NOT answer questions unrelated to medications or pharmacies
+- If a user asks an out-of-scope question, politely decline and redirect
+
+Example of OUT-OF-SCOPE: nutrition advice, exercise routines, mental health, general health conditions not related to medication
+Example of IN-SCOPE: "Can I take this medication with food?", "What are side effects of X?", "Where's the nearest pharmacy?"
+```
+
+**2. Out-of-Scope Detection (Layered)**
+- Layer 1 (Client-side): Pre-flight topic classification before sending to API
+  - Keywords: medication, dosage, interaction, pharmacy, side effect, bioequivalent, contraindication
+  - If query lacks medication/pharmacy keywords, show warning: "This question is outside my scope"
+  - Allow user to refine query or proceed
+
+- Layer 2 (API Response): Parse Claude response for rejection signals
+  - Detect patterns: "I can't answer that", "outside my scope", "not about medications"
+  - Flag response and show scope limitation message
+
+- Layer 3 (Analytics): Log all out-of-scope attempts
+  - Track patterns of off-topic queries
+  - Use for future scope expansion decisions
+
+**3. Rejection Message UI**
+```
+┌─────────────────────────────────────────┐
+│ Outside My Scope                        │
+├─────────────────────────────────────────┤
+│ I can only help with medication and     │
+│ pharmacy questions.                     │
+│                                         │
+│ Try asking me about:                    │
+│ • Check medication interactions         │
+│ • Find nearby pharmacy                  │
+│ • Understand side effects               │
+│                                         │
+│ [Ask medication question] [Search Map]  │
+└─────────────────────────────────────────┘
+```
+
+**4. Edge Cases & Handling**
+- Borderline health queries (e.g., "I have a headache"): Redirect to medication scope
+  - Show: "Ask me about medications to treat this condition"
+- Medical emergencies (chest pain, difficulty breathing): Show warning
+  - "If this is an emergency, call 911 immediately"
+- Diagnosis requests: Gently redirect to healthcare provider
+  - "Only a doctor can diagnose. Ask me about medications instead"
+
+### Data Models for Phase 2
+
+```typescript
+// Scope classification result
+interface ScopeClassification {
+  isInScope: boolean;
+  confidence: 0-1;      // 0 = uncertain, 1 = definitely in scope
+  topics: string[];     // ["medication", "interaction"]
+  reason: string;       // "Query contains medication keywords"
+}
+
+// Out-of-scope event (for analytics)
+interface OutOfScopeEvent {
+  userId: string;
+  query: string;
+  timestamp: Date;
+  detectionLayer: 'client' | 'api' | 'none';
+  userAction: 'refined' | 'proceeded' | 'dismissed';
+}
+```
+
+### Testing Strategy
+
+1. **Unit Tests**: Scope classification function
+   - Test with 50+ medication-related queries (should pass)
+   - Test with 50+ off-topic queries (should fail)
+   - Test edge cases (nutrition, exercise, health conditions)
+
+2. **Integration Tests**: End-to-end scope enforcement
+   - Off-topic query → Rejection message → Quick actions
+   - Borderline query → Gentle redirect
+   - Emergency keywords → Warning display
+
+3. **Manual Testing**: Scope enforcement edge cases
+   - Test with ambiguous queries
+   - Test with multi-language (Spanish/English)
+   - Test with user's own medical history context
+
+---
+
 ## Open Questions
 1. **Bioequivalent database**: Should it be pre-bundled (larger APK) or fetched on demand? → **Decision**: Fetch in Phase 2, not MVP
 2. **Pharmacy hours format**: MINSAL API returns free text. Should we parse into structured form? → **Decision**: Store as-is for MVP, parse in Phase 2
 3. **Multi-timezone support**: How to handle users traveling? → **Decision**: Phase 2 "Travel Profile" feature
 4. **Healthcare provider integration**: Export medication list? → **Decision**: Simple PDF export in Phase 2
+5. **AI scope enforcement method**: Client-side filtering, API system prompt, or both? → **Decision**: Both (defense in depth) as designed in "AI Scope Enforcement Strategy" section above
 

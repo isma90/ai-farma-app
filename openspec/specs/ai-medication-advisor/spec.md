@@ -233,3 +233,22 @@ The system SHALL save conversation history for user reference.
 - **AND** permanently remove from local storage and Firestore
 - **AND** show confirmation toast after deletion
 
+### Requirement: Query Scope Limitation and Out-of-Scope Rejection
+Per project.md constraint, the system SHALL only respond to queries about medications and pharmacies, and must reject unrelated topics.
+
+#### Scenario: Out-of-scope query rejected
+- **WHEN** user asks a question unrelated to medications or pharmacies
+- **THEN** display rejection message
+- **AND** indicate the AI only supports medication/pharmacy topics
+- **AND** provide examples of supported topics
+
+#### Scenario: Scope clarification with examples
+- **WHEN** rejection message shown
+- **THEN** show quick-action buttons for supported topics
+- **AND** include examples like: "Check medication interactions", "Find nearby pharmacy", "Understand side effects"
+
+#### Scenario: Borderline health queries
+- **WHEN** user asks about general health topics (not medication-specific)
+- **THEN** gently redirect to medication/pharmacy scope
+- **AND** suggest "This question is outside my scope, but ask me about medications instead"
+

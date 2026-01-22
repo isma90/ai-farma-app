@@ -293,6 +293,25 @@
 - [ ] 6.2.3 Handle API timeouts (8-second limit)
 - [ ] 6.2.4 Log errors to Sentry
 
+### 6.3 Phase 2 AI Scope Limitation (When implementing full Claude/OpenAI integration)
+- [ ] 6.3.1 Add system prompt enforcing medication/pharmacy-only scope
+  - [ ] 6.3.1a System prompt explicitly states: "You are a medication and pharmacy assistant"
+  - [ ] 6.3.1b Include scope boundaries in prompt: "Only answer questions about medications, dosages, interactions, and pharmacy locations"
+  - [ ] 6.3.1c Define rejection policy: "If user asks unrelated topics, politely decline and redirect"
+- [ ] 6.3.2 Implement out-of-scope query detection
+  - [ ] 6.3.2a Client-side topic filtering (pre-flight check before sending to API)
+  - [ ] 6.3.2b Parse API response for rejection indicators
+  - [ ] 6.3.2c Log out-of-scope attempts for analytics
+- [ ] 6.3.3 Create rejection message UI
+  - [ ] 6.3.3a Display user-friendly rejection message when query out-of-scope
+  - [ ] 6.3.3b Show quick-action buttons for supported topics
+  - [ ] 6.3.3c Include examples: "Check medication interactions", "Find nearby pharmacy", "Understand side effects"
+- [ ] 6.3.4 Add integration tests for scope limitation
+  - [ ] 6.3.4a Test out-of-scope rejection for off-topic queries
+  - [ ] 6.3.4b Test that medication queries are accepted and processed
+  - [ ] 6.3.4c Test that pharmacy-related queries are accepted
+  - [ ] 6.3.4d Test borderline health queries are handled gracefully
+
 ---
 
 ## Phase 7: Testing & Optimization (Week 7-8)
