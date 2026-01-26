@@ -5,11 +5,14 @@ import { RootState } from '@redux/store';
 import { setTheme, setLocale } from '@redux/slices/appSlice';
 import { clearUser } from '@redux/slices/authSlice';
 import { authService } from '@services/AuthService';
+import { SyncIndicator } from '@components/SyncIndicator';
+import { useSyncQueue } from '@hooks/useSyncQueue';
 
 export const SettingsScreen = () => {
   const dispatch = useDispatch();
   const { theme, locale } = useSelector((state: RootState) => state.app);
   const { user } = useSelector((state: RootState) => state.auth);
+  const { processSyncQueue, queueSize } = useSyncQueue();
   const [notificationsEnabled, setNotificationsEnabled] = React.useState(true);
 
   const handleLogout = async () => {
@@ -45,6 +48,17 @@ export const SettingsScreen = () => {
             <Text style={styles.label}>Email</Text>
             <Text style={styles.value}>{user.email}</Text>
           </View>
+        )}
+      </View>
+
+      <SyncIndicator onSyncPress={() => processSyncQueue()} showProgress={true} />
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Sincronización</Text>
+        {queueSize > 0 && (
+          <TouchableOpacity style={styles.syncButton} onPress={() => processSyncQueue()}>
+            <Text style={styles.syncButtonText}>Sincronizar Ahora ({queueSize} cambios)</Text>
+          </TouchableOpacity>
         )}
       </View>
 
@@ -196,5 +210,17 @@ const styles = StyleSheet.create({
   version: {
     color: '#999',
     fontSize: 12,
+  },
+  syncButton: {
+    backgroundColor: '#2196F3',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  syncButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

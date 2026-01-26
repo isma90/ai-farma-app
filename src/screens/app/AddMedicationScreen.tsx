@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
@@ -19,23 +19,33 @@ import { COLORS, MEDICATION_FREQUENCIES, MEAL_REQUIREMENTS } from '@constants/ap
 import { formatTime } from '@utils/dateUtils';
 import { v4 as uuid } from 'uuid';
 
-export const AddMedicationScreen = ({ navigation }: any) => {
+export const AddMedicationScreen = ({ navigation, route }: any) => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const editingMedication = route?.params?.editingMedication;
+  const isEditing = route?.params?.isEditing ?? false;
 
-  const [name, setName] = useState('');
-  const [dosage, setDosage] = useState('');
-  const [frequency, setFrequency] = useState<'once' | 'twice' | 'thrice' | 'custom'>('once');
-  const [times, setTimes] = useState(['08:00']);
-  const [mealRequirement, setMealRequirement] = useState<'fasting' | 'with-food' | 'any'>('any');
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
-  const [notes, setNotes] = useState('');
+  const [name, setName] = useState(editingMedication?.medicationName || '');
+  const [dosage, setDosage] = useState(editingMedication?.dosage || '');
+  const [frequency, setFrequency] = useState<'once' | 'twice' | 'thrice' | 'custom'>(editingMedication?.frequency || 'once');
+  const [times, setTimes] = useState(editingMedication?.times || ['08:00']);
+  const [mealRequirement, setMealRequirement] = useState<'fasting' | 'with-food' | 'any'>(editingMedication?.mealRequirement || 'any');
+  const [startDate, setStartDate] = useState(editingMedication ? new Date(editingMedication.startDate) : new Date());
+  const [endDate, setEndDate] = useState<Date | undefined>(editingMedication && editingMedication.endDate ? new Date(editingMedication.endDate) : undefined);
+  const [notes, setNotes] = useState(editingMedication?.notes || '');
   const [isLoading, setIsLoading] = useState(false);
 
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [timeEditIndex, setTimeEditIndex] = useState(0);
+
+  useEffect(() => {
+    if (isEditing) {
+      navigation.setOptions({ title: 'Editar Medicina' });
+    } else {
+      navigation.setOptions({ title: 'Agregar Medicina' });
+    }
+  }, [isEditing, navigation]);
 
   const handleStartDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
@@ -114,30 +124,59 @@ export const AddMedicationScreen = ({ navigation }: any) => {
 
     setIsLoading(true);
     try {
-      const medication = await medicationService.createMedication(user.uid, {
-        medicationName: name,
-        dosage,
-        frequency,
-        times,
-        mealRequirement,
-        startDate,
-        endDate,
-        notes,
-        userId: user.uid,
-        adherenceHistory: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      if (isEditing && editingMedication) {
+        // Update existing medication
+        const updatedMedication = {
+          ...editingMedication,
+          medicationName: name,
+          dosage,
+          frequency,
+          times,
+          mealRequirement,
+          startDate,
+          endDate,
+          notes,
+          updatedAt: new Date(),
+        };
+        await medicationService.updateMedication(user.uid, editingMedication.id, updatedMedication);
 
-      // Schedule reminders
-      await notificationService.scheduleReminder(medication, 15);
+        // Cancel old reminder and schedule new one
+        await notificationService.cancelReminder(editingMedication.id);
+        await notificationService.scheduleReminder(updatedMedication, 15);
 
-      Alert.alert('Éxito', 'Medicamento agregado correctamente', [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]);
+        Alert.alert('Éxito', 'Medicamento actualizado correctamente', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      } else {
+        // Create new medication
+        const medication = await medicationService.createMedication(user.uid, {
+          medicationName: name,
+          dosage,
+          frequency,
+          times,
+          mealRequirement,
+          startDate,
+          endDate,
+          notes,
+          userId: user.uid,
+          adherenceHistory: [],
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        // Schedule reminders
+        await notificationService.scheduleReminder(medication, 15);
+
+        Alert.alert('Éxito', 'Medicamento agregado correctamente', [
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
+        ]);
+      }
     } catch (error) {
       console.error('Failed to save medication:', error);
       Alert.alert('Error', 'No se pudo guardar el medicamento');
@@ -332,7 +371,7 @@ export const AddMedicationScreen = ({ navigation }: any) => {
           disabled={isLoading}
         >
           <Text style={styles.saveButtonText}>
-            {isLoading ? 'Guardando...' : 'Guardar'}
+            {isLoading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Guardar'}
           </Text>
         </TouchableOpacity>
       </View>

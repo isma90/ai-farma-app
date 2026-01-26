@@ -67,8 +67,10 @@ export const MedicationScreen = ({ navigation }: any) => {
   };
 
   const handleEditMedication = (medication: IMedicationSchedule) => {
-    // TODO: Navigate to edit screen
-    Alert.alert('Info', 'Editar medicamentos será implementado en la próxima versión');
+    navigation.navigate('AddMedication', {
+      editingMedication: medication,
+      isEditing: true
+    });
   };
 
   if (isLoading) {

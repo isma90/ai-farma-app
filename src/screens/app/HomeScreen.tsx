@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSelector } from 'react-redux';
 import { RootState } from '@redux/store';
+import { SyncIndicator } from '@components/SyncIndicator';
 
 export const HomeScreen = () => {
   const { user, isAnonymous } = useSelector((state: RootState) => state.auth);
@@ -20,6 +21,8 @@ export const HomeScreen = () => {
           {isOnline ? '🟢 En Línea' : '🔴 Sin Conexión'}
         </Text>
       </View>
+
+      <SyncIndicator showProgress={true} />
 
       {isAnonymous && (
         <View style={styles.warningCard}>
