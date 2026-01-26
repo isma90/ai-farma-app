@@ -4,6 +4,42 @@ Historial de cambios y mejoras en el proyecto AI Farma, ordenado de más recient
 
 ## 2026-01-26
 
+### feat(complete-mvp): implement all missing phases (Pharmacy, Medications, Offline, AI Chat)
+
+**Commits**: `e596bc9`, `bcb0819`, `bb82756`
+
+Implementación completa de todas las funcionalidades faltantes del MVP (Fases 3-6):
+
+#### Phase 3: Localizador de Farmacias
+- Búsqueda y filtrado por radio, estado de turno
+- Vista de lista con distancia en tiempo real
+- Vista detallada con información de contacto
+- Navegación a Maps/Waze, compartir, agregar favoritos
+
+#### Phase 4: Gestión de Medicamentos
+- Formulario completo para crear/editar medicamentos
+- Vista detallada con calendario de adherencia
+- Estadísticas de adherencia (%, tomadas, omitidas)
+- Calendario interactivo para marcar medicamentos
+- Recordatorios automáticos y gestión de notificaciones
+
+#### Phase 5: Soporte Offline
+- Indicador de sincronización con estado de la cola
+- Botón de sincronización manual en Configuración
+- Información de último sync y progreso
+
+#### Phase 6: Chat de IA
+- Interfaz completa de chat con burbujas de mensaje
+- Detección de conexión offline
+- Cargando estados durante respuestas
+- Listo para integración con Claude/OpenAI en Phase 2
+
+→ [Ver detalles completos](./changelog-2026-01-26-impl-completion.md)
+
+**Impacto**: La aplicación ahora es completamente funcional para MVP. Todas las características principales están implementadas y listas para pruebas de usuario.
+
+---
+
 ### docs(setup): add Firebase and development guides
 
 **Commit**: `db50801`
