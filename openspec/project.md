@@ -508,18 +508,12 @@ Sistema:
 
 ### Negocio
 
-#### Monetización (Fase futura)
-- Versión base es **gratuita** sin publicidad
-- Posibles fuentes futuras:
-    - Farmacias pagan por aparecer destacadas
-    - Programa de afiliación con bioequivalentes
-    - Estadísticas agregadas a laboratorios (anónimas)
-
 #### Restricciones Éticas
 - No manipular orden de resultados por pago de farmacias
 - No recomendar bioequivalente si no hay evidencia científica
 - No enviar notificaciones promocionales de medicamentos
 - Transparencia total sobre cómo funciona la IA
+- La IA debe contestar solo información relacionada con medicamentos y farmacias, toda otra información que sea consultada debe ser rechazada indicando el tipo de temas e información a las cuales si puede responder.
 
 ### Operacionales
 
