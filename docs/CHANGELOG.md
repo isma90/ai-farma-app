@@ -4,6 +4,34 @@ Historial de cambios y mejoras en el proyecto AI Farma, ordenado de más recient
 
 ## 2026-01-26
 
+### docs(setup): add Firebase and development guides
+
+**Commit**: `db50801`
+
+Documentación completa para onboarding de desarrolladores:
+- FIREBASE_SETUP.md: Setup paso a paso de Firebase desde consola
+- DEVELOPMENT.md: Guía de desarrollo con ejemplos de servicios y hooks
+
+→ [Ver detalles completos](./changelog-2026-01-26-1030-db50801.md)
+
+---
+
+### feat(services): add core services for offline, notifications, and sync
+
+**Commit**: `250de18`
+
+Implementación de servicios críticos para Phase 4 (Medication) y Phase 5 (Offline):
+- NotificationService: Recordatorios locales con reintentos
+- MedicationService: CRUD de medicamentos con sincronización
+- SyncService: Cola de sincronización con exponential backoff
+- FavoritesService: Gestión de farmacias favoritas
+- Custom hooks: usePharmacies, useSyncQueue
+- Utilitarios: distanceUtils, dateUtils, constants
+
+→ [Ver detalles](./changelog-2026-01-26-1020-250de18.md)
+
+---
+
 ### feat(project-setup): initialize React Native MVP foundation
 
 **Commit**: `80fff84`
