@@ -6,8 +6,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HomeScreen } from '@screens/app/HomeScreen';
 import { PharmacyMapScreen } from '@screens/app/PharmacyMapScreen';
 import { PharmacyListScreen } from '@screens/app/PharmacyListScreen';
+import { PharmacyDetailScreen } from '@screens/app/PharmacyDetailScreen';
 import { ChatScreen } from '@screens/app/ChatScreen';
 import { MedicationScreen } from '@screens/app/MedicationScreen';
+import { AddMedicationScreen } from '@screens/app/AddMedicationScreen';
 import { SettingsScreen } from '@screens/app/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -29,6 +31,38 @@ const PharmacyStack = () => {
         name="PharmacyList"
         component={PharmacyListScreen}
         options={{ title: 'Farmacias Cercanas' }}
+      />
+      <Stack.Screen
+        name="PharmacyDetail"
+        component={PharmacyDetailScreen}
+        options={({ route }: any) => ({
+          title: 'Detalles de Farmacia',
+          headerBackTitle: 'Atrás',
+        })}
+      />
+    </Stack.Navigator>
+  );
+};
+
+const MedicationStack = () => {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: true,
+      }}
+    >
+      <Stack.Screen
+        name="MedicationList"
+        component={MedicationScreen}
+        options={{ title: 'Mis Medicinas' }}
+      />
+      <Stack.Screen
+        name="AddMedication"
+        component={AddMedicationScreen}
+        options={{
+          title: 'Agregar Medicina',
+          headerBackTitle: 'Atrás',
+        }}
       />
     </Stack.Navigator>
   );
@@ -83,7 +117,7 @@ export const AppNavigator = () => {
       />
       <Tab.Screen
         name="Medications"
-        component={MedicationScreen}
+        component={MedicationStack}
         options={{
           title: 'Medicinas',
         }}
