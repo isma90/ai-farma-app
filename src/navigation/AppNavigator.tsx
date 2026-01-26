@@ -10,6 +10,7 @@ import { PharmacyDetailScreen } from '@screens/app/PharmacyDetailScreen';
 import { ChatScreen } from '@screens/app/ChatScreen';
 import { MedicationScreen } from '@screens/app/MedicationScreen';
 import { AddMedicationScreen } from '@screens/app/AddMedicationScreen';
+import { MedicationDetailScreen } from '@screens/app/MedicationDetailScreen';
 import { SettingsScreen } from '@screens/app/SettingsScreen';
 
 const Tab = createBottomTabNavigator();
@@ -61,6 +62,14 @@ const MedicationStack = () => {
         component={AddMedicationScreen}
         options={{
           title: 'Agregar Medicina',
+          headerBackTitle: 'Atrás',
+        }}
+      />
+      <Stack.Screen
+        name="MedicationDetail"
+        component={MedicationDetailScreen}
+        options={{
+          title: 'Detalles',
           headerBackTitle: 'Atrás',
         }}
       />

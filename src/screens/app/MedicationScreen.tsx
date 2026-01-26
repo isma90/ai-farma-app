@@ -110,7 +110,7 @@ export const MedicationScreen = ({ navigation }: any) => {
             <MedicationCard
               medication={item}
               onPress={() => {
-                // TODO: Navigate to medication detail
+                navigation.navigate('MedicationDetail', { medicationId: item.id });
               }}
               onEditPress={() => handleEditMedication(item)}
               onDeletePress={() => handleDeleteMedication(item)}
