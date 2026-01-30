@@ -1,0 +1,6 @@
+module Pods_AIFarma {
+  umbrella header "Pods-AIFarma-umbrella.h"
+
+  export *
+  module * { export * }
+}
