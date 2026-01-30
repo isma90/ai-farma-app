@@ -41,7 +41,7 @@ export type ChatStackParamList = {
 
 export type MedicationStackParamList = {
   MedicationList: undefined;
-  AddMedication: undefined;
+  AddMedication: { medicationId?: string } | undefined;
   MedicationDetail: { medicationId: string };
 };
 
