@@ -1,30 +1,11 @@
-import { initializeApp } from 'firebase/app';
-import {
-  getAuth,
-  Auth,
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  sendPasswordResetEmail,
-  signInAnonymously,
-  onAuthStateChanged,
-  AuthError,
-} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { v4 as uuid } from 'uuid';
 
-// Firebase configuration from environment variables
-const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase app
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+export interface IUser {
+  uid: string;
+  email: string;
+  displayName?: string;
+}
 
 export interface IAuthError {
   code: string;
@@ -32,66 +13,129 @@ export interface IAuthError {
 }
 
 /**
- * AuthService: Firebase Authentication wrapper
- * Handles user authentication, session management, and auth state
+ * AuthService: Mock Authentication Service
+ * Handles user authentication locally without Firebase
+ * Ready to be replaced with Firebase when configured
  */
 class AuthService {
-  private auth: Auth;
+  private currentUser: IUser | null = null;
+  private authStateCallbacks: ((user: IUser | null) => void)[] = [];
 
   constructor() {
-    this.auth = auth;
+    this.initializeAuthState();
+  }
+
+  /**
+   * Initialize auth state from AsyncStorage
+   */
+  private async initializeAuthState(): Promise<void> {
+    try {
+      const storedUser = await AsyncStorage.getItem('currentUser');
+      if (storedUser) {
+        this.currentUser = JSON.parse(storedUser);
+      }
+    } catch (error) {
+      console.error('[AuthService] Failed to initialize auth state:', error);
+    }
   }
 
   /**
    * Sign up with email and password
    */
-  async signUpWithEmail(email: string, password: string): Promise<User> {
+  async signUpWithEmail(email: string, password: string): Promise<IUser> {
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        this.auth,
+      // Validate inputs
+      if (!email || !password) {
+        throw this.createError('auth/invalid-input', 'Email and password are required');
+      }
+
+      if (!this.isValidEmail(email)) {
+        throw this.createError('auth/invalid-email', 'Invalid email address');
+      }
+
+      if (password.length < 6) {
+        throw this.createError('auth/weak-password', 'Password is too weak (min 6 characters)');
+      }
+
+      // Check if user exists
+      const existingUser = await AsyncStorage.getItem(`user_${email}`);
+      if (existingUser) {
+        throw this.createError('auth/email-already-in-use', 'Email already registered');
+      }
+
+      // Create new user
+      const newUser: IUser = {
+        uid: uuid(),
         email,
-        password
-      );
-      console.log('[AuthService] User signed up:', userCredential.user.uid);
-      return userCredential.user;
+        displayName: email.split('@')[0],
+      };
+
+      // Store user
+      await AsyncStorage.setItem(`user_${email}`, JSON.stringify(newUser));
+      await AsyncStorage.setItem('currentUser', JSON.stringify(newUser));
+
+      this.currentUser = newUser;
+      this.notifyAuthStateChanged(newUser);
+
+      console.log('[AuthService] User signed up:', newUser.uid);
+      return newUser;
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('[AuthService] Sign up error:', authError.code, authError.message);
-      throw this.normalizeError(authError);
+      console.error('[AuthService] Sign up error:', error);
+      throw error;
     }
   }
 
   /**
    * Sign in with email and password
    */
-  async signInWithEmail(email: string, password: string): Promise<User> {
+  async signInWithEmail(email: string, password: string): Promise<IUser> {
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        this.auth,
-        email,
-        password
-      );
-      console.log('[AuthService] User signed in:', userCredential.user.uid);
-      return userCredential.user;
+      // Validate inputs
+      if (!email || !password) {
+        throw this.createError('auth/invalid-input', 'Email and password are required');
+      }
+
+      // Simulate password check (in real Firebase, this would validate)
+      const userData = await AsyncStorage.getItem(`user_${email}`);
+      if (!userData) {
+        throw this.createError('auth/user-not-found', 'User not found');
+      }
+
+      const user: IUser = JSON.parse(userData);
+
+      // Store current user
+      await AsyncStorage.setItem('currentUser', JSON.stringify(user));
+      this.currentUser = user;
+      this.notifyAuthStateChanged(user);
+
+      console.log('[AuthService] User signed in:', user.uid);
+      return user;
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('[AuthService] Sign in error:', authError.code, authError.message);
-      throw this.normalizeError(authError);
+      console.error('[AuthService] Sign in error:', error);
+      throw error;
     }
   }
 
   /**
    * Sign in anonymously
    */
-  async signInAnonymously(): Promise<User> {
+  async signInAnonymously(): Promise<IUser> {
     try {
-      const userCredential = await signInAnonymously(this.auth);
-      console.log('[AuthService] Anonymous sign in:', userCredential.user.uid);
-      return userCredential.user;
+      const anonymousUser: IUser = {
+        uid: `anon_${uuid()}`,
+        email: 'anonymous@local',
+        displayName: 'Anonymous User',
+      };
+
+      await AsyncStorage.setItem('currentUser', JSON.stringify(anonymousUser));
+      this.currentUser = anonymousUser;
+      this.notifyAuthStateChanged(anonymousUser);
+
+      console.log('[AuthService] Anonymous sign in:', anonymousUser.uid);
+      return anonymousUser;
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('[AuthService] Anonymous sign in error:', authError.code);
-      throw this.normalizeError(authError);
+      console.error('[AuthService] Anonymous sign in error:', error);
+      throw error;
     }
   }
 
@@ -100,96 +144,85 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      await signOut(this.auth);
+      await AsyncStorage.removeItem('currentUser');
+      this.currentUser = null;
+      this.notifyAuthStateChanged(null);
       console.log('[AuthService] User logged out');
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('[AuthService] Logout error:', authError.code);
-      throw this.normalizeError(authError);
+      console.error('[AuthService] Logout error:', error);
+      throw error;
     }
   }
 
   /**
-   * Send password reset email
+   * Send password reset email (mock)
    */
   async resetPassword(email: string): Promise<void> {
     try {
-      await sendPasswordResetEmail(this.auth, email);
-      console.log('[AuthService] Password reset email sent');
+      if (!this.isValidEmail(email)) {
+        throw this.createError('auth/invalid-email', 'Invalid email address');
+      }
+      // In a real app, this would send an email
+      console.log('[AuthService] Password reset email would be sent to:', email);
     } catch (error) {
-      const authError = error as AuthError;
-      console.error('[AuthService] Password reset error:', authError.code);
-      throw this.normalizeError(authError);
+      console.error('[AuthService] Password reset error:', error);
+      throw error;
     }
   }
 
   /**
    * Get currently authenticated user
    */
-  getCurrentUser(): User | null {
-    return this.auth.currentUser;
+  getCurrentUser(): IUser | null {
+    return this.currentUser;
   }
 
   /**
    * Get user ID token
    */
   async getIdToken(): Promise<string> {
-    const user = this.auth.currentUser;
-    if (!user) {
+    if (!this.currentUser) {
       throw new Error('No authenticated user');
     }
-    return await user.getIdToken();
+    // Mock token - in real Firebase this would be a JWT
+    return `mock_token_${this.currentUser.uid}`;
   }
 
   /**
    * Listen to auth state changes
    */
-  onAuthStateChanged(callback: (user: User | null) => void): () => void {
-    return onAuthStateChanged(this.auth, callback);
+  onAuthStateChanged(callback: (user: IUser | null) => void): () => void {
+    this.authStateCallbacks.push(callback);
+
+    // Call immediately with current state
+    callback(this.currentUser);
+
+    // Return unsubscribe function
+    return () => {
+      this.authStateCallbacks = this.authStateCallbacks.filter((cb) => cb !== callback);
+    };
   }
 
   /**
-   * Normalize Firebase auth errors to standard format
+   * Notify all listeners of auth state change
    */
-  private normalizeError(error: AuthError): IAuthError {
-    let message = 'Authentication error';
+  private notifyAuthStateChanged(user: IUser | null): void {
+    this.authStateCallbacks.forEach((callback) => callback(user));
+  }
 
-    switch (error.code) {
-      case 'auth/invalid-email':
-        message = 'Invalid email address';
-        break;
-      case 'auth/user-disabled':
-        message = 'This account has been disabled';
-        break;
-      case 'auth/user-not-found':
-        message = 'User not found';
-        break;
-      case 'auth/wrong-password':
-        message = 'Incorrect password';
-        break;
-      case 'auth/email-already-in-use':
-        message = 'Email already registered';
-        break;
-      case 'auth/operation-not-allowed':
-        message = 'This operation is not allowed';
-        break;
-      case 'auth/weak-password':
-        message = 'Password is too weak (min 6 characters)';
-        break;
-      case 'auth/account-exists-with-different-credential':
-        message = 'Email already associated with different sign-in method';
-        break;
-      case 'auth/network-request-failed':
-        message = 'Network error. Check your connection';
-        break;
-      default:
-        message = error.message || 'Authentication failed';
-    }
+  /**
+   * Validate email format
+   */
+  private isValidEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
 
-    return {
-      code: error.code,
-      message,
-    };
+  /**
+   * Create error object
+   */
+  private createError(code: string, message: string): IAuthError {
+    return { code, message };
   }
 }
 
