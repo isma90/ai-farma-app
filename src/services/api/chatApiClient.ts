@@ -4,13 +4,68 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import type {
-  IBackendChatResponse,
-  SendMessageParams,
-  IConversationData,
-  IConversationSnapshot,
-  APIError,
-} from '../types';
+
+// Type definitions
+export interface IToolCallResult {
+  tool_name: string;
+  tool_input: Record<string, unknown>;
+  result: unknown;
+  error?: string;
+  success: boolean;
+}
+
+export interface IBackendChatResponse {
+  response: string;
+  tool_calls: IToolCallResult[];
+  metadata: {
+    conversation_id: string;
+    user_id: string;
+    has_warning: boolean;
+    warning_severity: 'CRITICAL' | 'WARNING' | null;
+  };
+  timestamp: string;
+}
+
+export interface SendMessageParams {
+  user_id: string;
+  conversation_id: string;
+  message: string;
+}
+
+export interface IConversationData {
+  conversation_id: string;
+  user_id: string;
+  created_at: string;
+  updated_at: string;
+  messages: IMessage[];
+}
+
+export interface IMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface IConversationSnapshot {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  createdAt: Date;
+  updatedAt: Date;
+  messageCount: number;
+  summary?: string;
+  firstMessage?: string;
+  lastMessage?: string;
+  estimated_token_count?: number;
+}
+
+export interface APIError {
+  status: number;
+  message: string;
+  code?: string;
+}
 
 class ChatApiClient {
   private client: AxiosInstance;
