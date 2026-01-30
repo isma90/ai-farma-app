@@ -153,7 +153,7 @@ export default function HomeScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton}>
-          <View style={styles.actionIcon} style={{ backgroundColor: '#4CAF50' }}>
+          <View style={[styles.actionIcon, { backgroundColor: '#4CAF50' }]}>
             <Ionicons name="map-outline" size={24} color="#fff" />
           </View>
           <View style={styles.actionContent}>
@@ -164,7 +164,7 @@ export default function HomeScreen({ navigation }: Props) {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.actionButton}>
-          <View style={styles.actionIcon} style={{ backgroundColor: '#FF9800' }}>
+          <View style={[styles.actionIcon, { backgroundColor: '#FF9800' }]}>
             <Ionicons name="chatbubble-outline" size={24} color="#fff" />
           </View>
           <View style={styles.actionContent}>

@@ -44,8 +44,14 @@ class ChatService {
     // Note: OpenAI API key is now handled by backend
     // Keeping this for state machine compatibility (can be removed after refactoring state machine)
     this.openaiApiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY || '';
-    this.stateAnalyzer = new SmartStateAnalyzer(this.openaiApiKey);
-    this.stateOrchestrator = createLLMStateOrchestrator(this.openaiApiKey);
+    // Initialize state analyzer and orchestrator
+    try {
+      this.stateAnalyzer = new SmartStateAnalyzer();
+      this.stateOrchestrator = createLLMStateOrchestrator({ apiKey: this.openaiApiKey });
+    } catch (err) {
+      console.warn('[ChatService] Failed to initialize state components:', err);
+      // Continue without state analysis - fallback to basic chat
+    }
   }
 
   /**

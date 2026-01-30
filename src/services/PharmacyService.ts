@@ -23,6 +23,11 @@ class PharmacyService {
     console.log('[PharmacyService] Getting pharmacy details:', pharmacyId);
     return null;
   }
+
+  async getPharmaciesNearby(latitude: number, longitude: number, radius?: number): Promise<Pharmacy[]> {
+    console.log('[PharmacyService] Getting nearby pharmacies:', { latitude, longitude }, 'radius:', radius);
+    return [];
+  }
 }
 
 export const pharmacyService = new PharmacyService();

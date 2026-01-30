@@ -11,7 +11,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { ChatStackParamList } from '../../navigation/AppNavigator';
 import { authService } from '../../services/AuthService';
-import { chatService, ChatMessage as ChatMessageType } from '../../services/ChatService';
+import { chatService, ChatMessage as ChatMessageType } from '../../services/ChatServiceSimple';
 import ChatMessage from '../../components/ChatMessage';
 import ChatInput from '../../components/ChatInput';
 

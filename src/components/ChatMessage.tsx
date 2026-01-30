@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ChatMessage as ChatMessageType } from '../services/ChatService';
+import { ChatMessage as ChatMessageType } from '../services/ChatServiceSimple';
 
 interface ChatMessageProps {
   message: ChatMessageType;

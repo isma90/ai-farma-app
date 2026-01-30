@@ -27,9 +27,7 @@ export default function AuthNavigator() {
       <Stack.Screen
         name="Welcome"
         component={WelcomeScreen}
-        options={{
-          animationEnabled: false,
-        }}
+        options={{}}
       />
       <Stack.Screen
         name="Login"

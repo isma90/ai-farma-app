@@ -10,6 +10,10 @@ export interface StateAnalysis {
 }
 
 export class SmartStateAnalyzer {
+  constructor(apiKey?: string) {
+    // Accept optional apiKey parameter for compatibility
+  }
+
   analyze(userMessage: string): StateAnalysis {
     console.log('[SmartStateAnalyzer] Analyzing message:', userMessage);
     return {
