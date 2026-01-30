@@ -4,7 +4,35 @@
 
 This changelog tracks all significant changes made to the AI Farma App. Entries are organized in reverse chronological order (most recent first).
 
-## Latest Changes (2026-01-28)
+## Latest Changes (2026-01-30)
+
+### App Startup Fix: Entry Point & Dependency Compatibility
+- **Commits**: `4bea603` (deps fix), `ac99bc4` (entry point fix)
+- **Type**: fix(deps), fix(entry-point)
+- **Focus**: Fix app startup errors and ensure Expo 49 compatibility
+- **Details**: See [changelog-2026-01-30-1630-ac99bc4.md](./changelog-2026-01-30-1630-ac99bc4.md)
+
+**Issues Resolved**:
+- ✅ Fixed React component export error on app startup
+- ✅ Resolved "Unable to resolve App" Metro bundler error
+- ✅ Updated dependencies to be compatible with Expo 49.0.0
+
+**Changes Made**:
+1. **Entry Point Fix** (ac99bc4)
+   - Corrected `index.js` to import from `./src/App` instead of empty root `./App`
+   - Deleted empty `App.tsx` file from root directory
+   - Cleared Metro bundler cache
+
+2. **Dependency Compatibility** (4bea603)
+   - Updated `@react-native-community/datetimepicker`: 7.7.0 → 7.2.0
+   - Updated `react-native-gesture-handler`: 2.30.0 → ~2.12.0
+   - Updated `react-native-maps`: 1.4.0 → 1.7.1
+
+**Result**: App now starts successfully on port 8081 with 0 TypeScript errors
+
+---
+
+## Earlier Changes (2026-01-28)
 
 ### LLM-Powered Medication Extraction
 - **Commit**: `84d14d2`
