@@ -1,12 +1,11 @@
 /**
  * SimplifiedChatService: Lightweight chat service wrapper
- * Provides core chat functionality without advanced state management
- * Uses backend API for message processing
+ * Provides core chat functionality with mock AI responses
+ * No backend required - works completely offline
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { generateUUID } from '../utils/uuid';
-import { chatApiClient, IBackendChatResponse } from './api/chatApiClient';
 
 export interface ChatMessage {
   id: string;
@@ -27,6 +26,16 @@ const CHAT_HISTORY_KEY = 'chat_history';
 
 class SimpleChatService {
   private messagesCache: Map<string, ChatMessage[]> = new Map();
+  private mockResponses: string[] = [
+    'Based on your medication history, I recommend taking your medication with food to minimize side effects.',
+    'Great question! Common side effects of this medication include dizziness and drowsiness. Make sure to stay hydrated.',
+    'I found 3 pharmacies nearby that are currently open. Would you like me to show you the map?',
+    'It\'s important to take your medications at consistent times each day. Set a reminder for the same time daily.',
+    'Before combining medications, always consult with your healthcare provider to check for potential interactions.',
+    'Your medication adherence is looking good! Keep up with your schedule for best results.',
+    'If you experience severe side effects, please stop taking the medication and consult a healthcare provider immediately.',
+    'I recommend organizing your medications into a pill organizer to help you remember to take them on time.',
+  ];
 
   /**
    * Send a message and get AI response
@@ -38,21 +47,14 @@ class SimpleChatService {
     conversationId: string
   ): Promise<{ text: string; toolCalls?: ToolCall[] }> {
     try {
-      // Store user message
-      const messages = conversationHistory || [];
+      // Simulate API delay
+      await new Promise((resolve) => setTimeout(resolve, 800));
 
-      // Call backend API for AI response
-      const response = await chatApiClient.sendMessage({
-        user_id: userId,
-        conversation_id: conversationId,
-        message: userMessage,
-      });
-
-      if (!response) {
-        throw new Error('No response from API');
-      }
+      // Get a mock response based on user message
+      const response = this.generateMockResponse(userMessage);
 
       // Save conversation history
+      const messages = conversationHistory || [];
       const updatedMessages: ChatMessage[] = [
         ...messages,
         {
@@ -64,21 +66,75 @@ class SimpleChatService {
         {
           id: generateUUID(),
           role: 'assistant',
-          content: response.response || 'I could not generate a response.',
+          content: response,
           timestamp: new Date(),
-          toolCalls: (response.tool_calls || []) as unknown as ToolCall[],
         } as ChatMessage,
       ];
       await this.saveConversationHistory(conversationId, updatedMessages);
 
       return {
-        text: response.response || '',
-        toolCalls: (response.tool_calls || []) as unknown as ToolCall[],
+        text: response,
+        toolCalls: [],
       };
     } catch (error: any) {
       console.error('[ChatService] Send message error:', error);
       throw new Error(error.message || 'Failed to send message');
     }
+  }
+
+  /**
+   * Generate mock AI response based on user message
+   */
+  private generateMockResponse(userMessage: string): string {
+    const lowerMessage = userMessage.toLowerCase();
+
+    // Pattern-based responses
+    if (
+      lowerMessage.includes('hello') ||
+      lowerMessage.includes('hi') ||
+      lowerMessage.includes('hey')
+    ) {
+      return "Hello! I'm your AI medication assistant. I can help you with medication information, pharmacy locations, side effects, and medication schedules. What can I help you with today?";
+    }
+
+    if (
+      lowerMessage.includes('side effect') ||
+      lowerMessage.includes('symptom') ||
+      lowerMessage.includes('effect')
+    ) {
+      return 'Common side effects vary by medication. The most frequent ones are usually mild and temporary. Always monitor how you feel and contact your healthcare provider if side effects worsen. Would you like specific information about a particular medication?';
+    }
+
+    if (
+      lowerMessage.includes('pharmacy') ||
+      lowerMessage.includes('pharmacies') ||
+      lowerMessage.includes('location')
+    ) {
+      return 'I can help you find nearby pharmacies! To show you the closest options, I need your location. You can also check our pharmacy locator tab to see all available pharmacies in your area with their opening hours.';
+    }
+
+    if (
+      lowerMessage.includes('reminder') ||
+      lowerMessage.includes('schedule') ||
+      lowerMessage.includes('time')
+    ) {
+      return 'Setting reminders is important for medication adherence! I recommend taking your medications at the same time each day. Use the Medications tab to set specific times for each medication you take.';
+    }
+
+    if (
+      lowerMessage.includes('interaction') ||
+      lowerMessage.includes('combine') ||
+      lowerMessage.includes('together')
+    ) {
+      return 'Always check for drug interactions before combining medications! Some medications should not be taken together as they can reduce effectiveness or cause harmful reactions. Please consult with your healthcare provider or pharmacist.';
+    }
+
+    if (lowerMessage.includes('emergency') || lowerMessage.includes('urgent')) {
+      return '⚠️ If you\'re experiencing a medical emergency, please call emergency services immediately (911 in the US). I\'m here to provide information only, not emergency care.';
+    }
+
+    // Return a random response for other questions
+    return this.mockResponses[Math.floor(Math.random() * this.mockResponses.length)];
   }
 
   /**

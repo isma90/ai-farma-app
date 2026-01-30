@@ -35,23 +35,31 @@ export default function ChatScreen({ navigation }: Props) {
 
   // Initialize on mount
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    if (user) {
-      setUserId(user.uid);
-      // Generate conversation ID (in real app, this would come from backend)
-      const convId = `conv_${user.uid}_${Date.now()}`;
-      setConversationId(convId);
-
-      // Add greeting message
-      const greeting: ChatMessageType = {
-        id: '1',
-        role: 'assistant',
-        content:
-          'Hello! I\'m your AI medication assistant. I can help you with medication schedules, interactions, side effects, and finding nearby pharmacies. How can I help you today?',
-        timestamp: new Date(),
+    // Get user or use mock user
+    let user = authService.getCurrentUser();
+    if (!user) {
+      // Use mock user if no authenticated user
+      user = {
+        uid: 'user_' + Math.random().toString(36).substr(2, 9),
+        email: 'guest@aifarma.local',
+        displayName: 'Guest',
       };
-      setMessages([greeting]);
     }
+
+    setUserId(user.uid);
+    // Generate conversation ID
+    const convId = `conv_${user.uid}_${Date.now()}`;
+    setConversationId(convId);
+
+    // Add greeting message
+    const greeting: ChatMessageType = {
+      id: '1',
+      role: 'assistant',
+      content:
+        'Hello! I\'m your AI medication assistant. I can help you with medication schedules, interactions, side effects, and finding nearby pharmacies. How can I help you today?',
+      timestamp: new Date(),
+    };
+    setMessages([greeting]);
   }, []);
 
   const handleSendMessage = useCallback(
