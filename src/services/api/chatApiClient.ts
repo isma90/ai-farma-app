@@ -4,13 +4,13 @@
  */
 
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import {
+import type {
   IBackendChatResponse,
   SendMessageParams,
   IConversationData,
   IConversationSnapshot,
   APIError,
-} from '@types/index';
+} from '../types';
 
 class ChatApiClient {
   private client: AxiosInstance;
