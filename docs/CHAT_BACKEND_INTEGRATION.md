@@ -1,199 +1,196 @@
 # Chat Backend Integration Guide
 
-This document provides comprehensive guidance on how the AI Farma mobile app integrates with the backend API for chat functionality.
+## Overview
 
-## Architecture Overview
+The chat functionality in the AI Farma mobile app now integrates with the AI Farma backend API instead of connecting directly to OpenAI. This provides:
 
-### Before Integration (Frontend-Driven)
+- **Enhanced Security**: API keys are kept secure on the backend
+- **Rate Limiting**: Backend controls request rates
+- **Conversation Persistence**: Backend manages conversation storage
+- **Audit Trail**: Server-side logging of all interactions
+- **Flexibility**: Easy to swap LLM providers without app changes
+
+## Architecture Changes
+
+### Before (Direct OpenAI Integration)
 ```
-Mobile App
-├─ Receives user message
-├─ Sends directly to OpenAI API
-├─ Parses LLM response with tool_calls
-├─ Executes tools locally
-└─ Sends results back to LLM
+Mobile App → OpenAI API
+             (API key in frontend)
 ```
 
-**Problems with this approach:**
-- API key exposed in frontend code
-- Complex tool execution logic in mobile app
-- No audit trail of interactions
-- Rate limiting handled on frontend
-- Difficult to swap LLM providers
-
-### After Integration (Backend-Driven)
+### After (Backend-Mediated Integration)
 ```
-Mobile App
-├─ Sends message to Backend
-└─ Backend handles everything:
-   ├─ LLM integration (OpenAI, Claude, etc.)
-   ├─ Tool execution
-   ├─ Response formatting
-   ├─ Audit logging
-   └─ Returns formatted response
+Mobile App → Backend API → OpenAI API
+             (Secure)      (Server-side only)
 ```
 
 ## Backend API Endpoints
 
-All endpoints are prefixed with `EXPO_PUBLIC_BACKEND_BASE_URL/api/chat`
+All chat operations go through the backend at `EXPO_PUBLIC_BACKEND_BASE_URL/api/chat`:
 
 ### 1. Send Message
+**Endpoint:** `POST /api/chat/send-message`
 
-**Endpoint:** `POST /send-message`
+```typescript
+interface SendMessageRequest {
+  user_id: string;
+  conversation_id: string;
+  message: string; // 1-500 characters
+}
 
-**Request:**
-```json
-{
-  "user_id": "user-123",
-  "conversation_id": "conv-456",
-  "message": "¿Cuál es la dosis de ibuprofeno?"
+interface SendMessageResponse {
+  response: string;                    // Chat response text
+  tool_calls: IToolCallResult[];       // Executed tools and results
+  metadata: {
+    conversation_id: string;
+    user_id: string;
+    has_warning: boolean;
+    warning_severity: 'CRITICAL' | 'WARNING' | null;
+  };
+  timestamp: string;                   // ISO 8601 datetime
 }
 ```
-
-**Response:**
-```json
-{
-  "response": "La dosis recomendada de ibuprofeno...",
-  "tool_calls": [
-    {
-      "tool_name": "search_pharmacy",
-      "tool_input": { "city": "Madrid" },
-      "result": [{"name": "Farmacia X", "address": "..."}],
-      "error": null
-    }
-  ],
-  "metadata": {
-    "conversation_id": "conv-456",
-    "user_id": "user-123",
-    "has_warning": false,
-    "warning_severity": null
-  },
-  "timestamp": "2026-01-30T15:45:00Z"
-}
-```
-
-**Error Responses:**
-
-| Status | Message | Cause |
-|--------|---------|-------|
-| 400 | Invalid message format | Message validation failed |
-| 403 | You don't have access | User doesn't own conversation |
-| 404 | Conversation not found | Conversation ID doesn't exist |
-| 429 | Too many requests | Rate limit exceeded |
-| 500 | Server error | Backend processing error |
 
 ### 2. Get Conversation History
+**Endpoint:** `GET /api/chat/history/{user_id}/{conversation_id}`
 
-**Endpoint:** `GET /history/{user_id}/{conversation_id}`
+Retrieves full conversation with all messages.
 
-**Response:**
-```json
-{
-  "conversation_id": "conv-456",
-  "user_id": "user-123",
-  "created_at": "2026-01-30T10:00:00Z",
-  "updated_at": "2026-01-30T15:45:00Z",
-  "messages": [
-    {
-      "role": "user",
-      "content": "¿Cuál es la dosis de ibuprofeno?",
-      "timestamp": "2026-01-30T10:00:00Z"
-    },
-    {
-      "role": "assistant",
-      "content": "La dosis recomendada...",
-      "timestamp": "2026-01-30T10:01:00Z"
-    }
-  ]
-}
-```
+### 3. Get User's Conversations
+**Endpoint:** `GET /api/chat/conversations/{user_id}`
 
-### 3. List User Conversations
-
-**Endpoint:** `GET /conversations/{user_id}`
-
-**Response:**
-```json
-[
-  {
-    "conversation_id": "conv-1",
-    "user_id": "user-123",
-    "title": "Medicamentos para el resfriado",
-    "created_at": "2026-01-30T10:00:00Z",
-    "updated_at": "2026-01-30T10:30:00Z",
-    "preview": "Hola, tengo resfriado..."
-  },
-  {
-    "conversation_id": "conv-2",
-    "user_id": "user-123",
-    "title": "Interacciones medicamentosas",
-    "created_at": "2026-01-29T15:00:00Z",
-    "updated_at": "2026-01-29T16:00:00Z",
-    "preview": "¿Puedo combinar ibuprofen..."
-  }
-]
-```
+Retrieves list of all conversations for a user with summaries.
 
 ### 4. Delete Conversation
-
-**Endpoint:** `DELETE /conversation/{user_id}/{conversation_id}`
-
-**Response:** 204 No Content
+**Endpoint:** `DELETE /api/chat/conversation/{user_id}/{conversation_id}`
 
 ### 5. Clear All Conversations
+**Endpoint:** `POST /api/chat/clear-all/{user_id}`
 
-**Endpoint:** `POST /clear-all/{user_id}`
+## Configuration
 
-**Response:** 200 OK
+### Environment Variables
+
+In `.env.example` and your `.env` file:
+
+```bash
+# Backend URL (local development)
+EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000
+
+# Production (example)
+EXPO_PUBLIC_BACKEND_BASE_URL=https://api.aifarma.com
+```
+
+### Remove Old Configuration
+
+The following is NO LONGER NEEDED:
+- `EXPO_PUBLIC_OPENAI_API_KEY` - Now managed by backend only
+
+## Code Changes
+
+### ChatService.ts
+
+**Key changes:**
+1. `sendMessage()` now calls `chatApiClient.sendMessage()` instead of OpenAI directly
+2. Tool results come from backend response (`tool_calls` array)
+3. Backend handles self-medication detection and warnings
+4. New methods: `getConversationHistoryFromBackend()`, `getUserConversationsFromBackend()`
+5. Updated: `deleteConversation()`, `clearAllConversations()` now sync with backend first
+
+### New File: src/services/api/chatApiClient.ts
+
+HTTP client for backend API with:
+- Request/response interceptors for logging
+- Automatic error normalization
+- Type-safe API methods
+- Timeout handling (10s default)
+
+## Error Handling
+
+The API client normalizes HTTP errors:
+
+| Status | Meaning | User Message |
+|--------|---------|--------------|
+| 400 | Bad Request | "Invalid message format" |
+| 403 | Forbidden | "You don't have access to this conversation" |
+| 404 | Not Found | "Conversation not found" |
+| 429 | Rate Limited | "Too many requests. Please wait." |
+| 500 | Server Error | "Server error. Please try again." |
+| Network Error | No Connection | "Network error. Please check your connection." |
 
 ## Local Development Setup
 
-### Prerequisites
-- Backend server running (see backend repository)
-- Node.js and npm/yarn installed
-- Expo CLI installed globally
+### Configure Backend
 
-### Steps
+Before starting the backend server, ensure `.env` has proper configuration:
 
-1. **Start the backend server:**
-   ```bash
-   cd ../ai-farma-back
-   python -m uvicorn main:app --reload
-   ```
-   Backend will be available at `http://localhost:8000`
+```bash
+cd ../ai-farma-back
+```
 
-2. **Configure environment:**
-   Create or update `.env` file:
-   ```env
-   EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000
-   EXPO_PUBLIC_ENV=development
-   ```
+Check/update `.env` file:
+```bash
+# Required
+OPENAI_API_KEY=sk-your-actual-api-key
+SECRET_KEY=your-secret-key-here-min-32-chars-long-for-security  # Keep secure!
 
-3. **Install dependencies:**
-   ```bash
-   npm install
-   # or
-   yarn install
-   ```
+# Database (using Docker Compose defaults)
+DATABASE_URL=postgresql+asyncpg://ai_farma:password@postgres:5432/ai_farma
 
-4. **Start the mobile app:**
-   ```bash
-   npm start
-   # or
-   yarn start
-   ```
+# Other services
+REDIS_URL=redis://redis:6379/0
+ENVIRONMENT=development
+```
 
-5. **Run on device or simulator:**
-   - Press `i` for iOS
-   - Press `a` for Android
-   - Press `w` for web
+### Start Backend Server
+
+**With Docker Compose (Recommended):**
+```bash
+docker-compose up -d
+```
+Backend runs on `http://localhost:8000`
+
+**Without Docker (Local Python):**
+```bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Use SQLite for local dev
+export DATABASE_URL=sqlite:///./ai_farma.db
+
+python -m uvicorn main:app --reload
+```
+Backend runs on `http://localhost:8000`
+
+⚠️ **Important Security Notes:**
+1. Never commit `.env` file to version control
+2. Generate a strong SECRET_KEY for production (min 32 characters)
+3. Rotate credentials periodically
+4. Keep OPENAI_API_KEY secret
+
+### Configure Frontend
+
+Create `.env` file in project root:
+
+```bash
+EXPO_PUBLIC_BACKEND_BASE_URL=http://localhost:8000
+# ... other config
+```
+
+### Run Mobile App
+
+```bash
+npm start
+# Press 'a' for Android or 'i' for iOS
+```
 
 ## Testing the Integration
 
-### Using curl
+### 1. Basic Chat Flow
 
-**Test sending a message:**
 ```bash
+# Send message
 curl -X POST http://localhost:8000/api/chat/send-message \
   -H "Content-Type: application/json" \
   -d '{
@@ -203,176 +200,101 @@ curl -X POST http://localhost:8000/api/chat/send-message \
   }'
 ```
 
-**Test getting history:**
+### 2. Get Conversation History
+
 ```bash
 curl http://localhost:8000/api/chat/history/test-user/test-conv-123
 ```
 
-**Test listing conversations:**
+### 3. List Conversations
+
 ```bash
 curl http://localhost:8000/api/chat/conversations/test-user
 ```
 
-### Using the Frontend
+## Migration Notes
 
-1. Create a new conversation
-2. Send test messages
-3. Verify responses appear correctly
-4. Check for warning messages if applicable
-5. Test conversation deletion
+### For Existing Conversations
 
-## Warning Handling
+- Conversations stored locally continue to work
+- First backend call creates conversation record on backend
+- Subsequent calls read/write from backend
 
-The backend can return warning messages when self-medication risks are detected:
+### For Developers
 
-**Response with warning:**
-```json
-{
-  "response": "⚠️ ADVERTENCIA CRITICAL: No debe combinar estos medicamentos sin supervisión médica.",
-  "tool_calls": [],
-  "metadata": {
-    "has_warning": true,
-    "warning_severity": "CRITICAL"
-  },
-  "timestamp": "2026-01-30T15:45:00Z"
-}
-```
+If you have code that:
+- Imports `getToolDefinitions()` or `parseToolCallArguments()` from `src/types/openai-tools.ts`
+  - These are no longer used in ChatService
+  - Backend handles tool definitions and execution
 
-**Warning Severity Levels:**
-- `CRITICAL`: Dangerous combination, user should see a doctor
-- `WARNING`: Potential interaction, use caution
-- `INFO`: General information or reminder
-
-The mobile app should:
-1. Check `has_warning` flag
-2. Display warning prominently if true
-3. Show severity level (⚠️ for WARNING/CRITICAL)
-4. Allow user to acknowledge and continue
-
-## Error Handling
-
-### Network Errors
-```typescript
-try {
-  const response = await chatService.sendMessage(userId, conversationId, message);
-} catch (error: APIError) {
-  if (error.code === 'NETWORK_ERROR') {
-    // Show offline message, queue for retry
-  } else if (error.status === 429) {
-    // Rate limited, show wait time
-  } else {
-    // Show general error message
-  }
-}
-```
-
-### Offline Support
-
-The `ChatService` implements offline support:
-- Messages are stored locally in AsyncStorage
-- Failed messages are queued for retry
-- When backend becomes available, queued messages are sent
-- Full conversation history can be pulled from backend when reconnected
-
-## Migration from Frontend-Only Integration
-
-If you previously had direct OpenAI integration:
-
-1. **Remove OpenAI API key from frontend:**
-   - Delete `EXPO_PUBLIC_OPENAI_API_KEY` from `.env`
-   - Remove OpenAI client initialization
-
-2. **Update ChatService:**
-   - Use the refactored `ChatService` that calls backend
-   - Remove tool execution logic
-   - Remove OpenAI model configuration
-
-3. **Update screens/components:**
-   - Change from calling `sendMessage()` to `chatApiClient.sendMessage()`
-   - Update error handling for new error format
-   - Update response handling (no more tool execution)
-
-4. **Testing:**
-   - Test with backend running
-   - Test network error scenarios
-   - Test offline message queueing
+If you have tests that:
+- Mock OpenAI API calls
+  - Update mocks to use `chatApiClient` instead
+  - See `src/services/api/__tests__/chatApiClient.test.ts` for examples
 
 ## Performance Considerations
 
-1. **Message Timeout:** 10 seconds by default (configurable)
-2. **Rate Limiting:** Backend enforces per-user rate limits
-3. **Conversation Limits:** Keep conversation size reasonable for local storage
-4. **Caching:** Backend responses are cached locally for offline support
+### Message Response Time
+- Expected: 3-8 seconds (same as before)
+- Backend must connect to OpenAI, process response, execute tools
+
+### Network Latency
+- If backend is remote (not localhost), add 0.5-2 seconds
+- Compress payloads for slower networks
+
+### Conversation List Loading
+- Fetches from backend (not local AsyncStorage)
+- On first load, may take 1-2 seconds
+- Results are cached locally for subsequent views
 
 ## Troubleshooting
 
-### "Backend API not configured"
-**Cause:** Missing or invalid `EXPO_PUBLIC_BACKEND_BASE_URL`
-**Solution:**
-- Check `.env` file
-- Verify URL format (e.g., `http://localhost:8000`, not `localhost:8000`)
-- Make sure backend server is running
+### Backend Connection Fails
 
-### "Network error. Please check your connection."
-**Cause:** Backend unreachable
-**Solution:**
-- Verify backend is running: `curl http://localhost:8000/health`
-- Check network connectivity
-- Check firewall settings
-- On iOS: May need to configure ATS for localhost development
+```
+Error: Network error. Please check your connection.
+```
 
-### "Message too long"
-**Cause:** Message exceeds 500 character limit
-**Solution:**
-- Frontend should validate before sending
-- Check message length before calling `sendMessage()`
+**Solutions:**
+1. Check `EXPO_PUBLIC_BACKEND_BASE_URL` is correct
+2. Verify backend is running: `curl http://localhost:8000/health`
+3. Check firewall/network policies
 
-### "Too many requests"
-**Cause:** Rate limit exceeded
-**Solution:**
-- Wait 60 seconds before retrying
-- Implement exponential backoff in retry logic
-- Check if multiple requests are being sent unintentionally
+### Message Too Long Error
 
-### Conversations not syncing
-**Cause:** Backend and local storage out of sync
-**Solution:**
-- Clear local conversations: `chatService.clearAllConversations(userId)`
-- Refresh from backend: `chatService.getUserConversationsFromBackend(userId)`
-- Check backend is returning data
+```
+Error: Message must be between 1 and 500 characters
+```
 
-## Security Considerations
+**Solution:** Frontend should validate message length before sending.
 
-1. **API Key Protection:**
-   - API key is now server-side only
-   - Frontend cannot access LLM credentials
-   - Better protection against key exposure
+### Conversation Not Found
 
-2. **User Authentication:**
-   - Ensure `user_id` is properly authenticated
-   - Backend should verify user ownership of conversations
-   - Consider implementing JWT tokens for API calls
+```
+Error: Conversation not found
+```
 
-3. **Rate Limiting:**
-   - Backend enforces per-user rate limits
-   - Prevents abuse and ensures fair usage
+**Solution:** Ensure `conversation_id` matches one created on backend.
 
-4. **Audit Logging:**
-   - All conversation data should be logged server-side
-   - Timestamps are provided in responses
-   - Enables compliance with data regulations
+### Rate Limit Hit
 
-## Next Steps
+```
+Error: Too many requests. Please wait.
+```
 
-1. **Full Integration Testing:** Test against real backend instance
-2. **Performance Monitoring:** Track response times and error rates
-3. **Offline Mode:** Enhance offline message queueing
-4. **Message Search:** Add conversation search capabilities
-5. **Analytics:** Track usage patterns server-side
+**Solution:** Wait 60 seconds before retrying. User can read FAQs meanwhile.
 
-## Additional Resources
+## Future Improvements
 
-- Backend API Documentation: See `ai-farma-back` repository
-- Chat Service: `src/services/ChatService.ts`
-- Chat API Client: `src/services/api/chatApiClient.ts`
-- Type Definitions: `src/types/index.ts`
+- [ ] Message queuing for offline mode
+- [ ] Conversation auto-save while typing
+- [ ] Real-time collaboration (WebSocket)
+- [ ] Conversation search/filtering
+- [ ] Export conversations as PDF
+
+## Support
+
+For issues or questions:
+1. Check backend logs: `tail -f server.log`
+2. Check frontend console: Browser DevTools or Metro bundler output
+3. Review backend API docs: `http://localhost:8000/docs` (Swagger UI)

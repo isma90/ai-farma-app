@@ -3,33 +3,42 @@
     "name": "AI Farma",
     "slug": "ai-farma-app",
     "version": "1.0.0",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "entryPoint": "index.js",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTabletMode": true,
-      "requiresFullScreen": false
+      "bundleIdentifier": "com.aifarma.app",
+      "newArchEnabled": false,
+      "deploymentTarget": "13.4",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "waze",
+          "maps"
+        ]
+      },
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+      "package": "com.aifarma.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      [
-        "expo-location",
-        {
-          "locationAlwaysAndWhenInUsePermissions": "Allow AI Farma to access your location for pharmacy search"
-        }
-      ]
-    ]
+    "plugins": []
   }
 }

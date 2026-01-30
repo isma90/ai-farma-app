@@ -1,15 +1,15 @@
-# Dependencies
-node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-
-# Environment variables
+# Environment
 .env
 .env.local
 .env.*.local
 
-# OS Files
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
 .DS_Store
 Thumbs.db
 
@@ -26,19 +26,26 @@ build/
 .expo/
 .expo-shared/
 *.jks
+*.p8
 *.p12
 *.key
 *.mobileprovision
 *.orig.*
 
+# iOS specific
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+ios/.xcode.env.local
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+ios/build/generated/
+
 # Testing
 coverage/
 .nyc_output/
 
-# Runtime
-tmp/
-temp/
-
-# Lock files (optional - uncomment if you want to track them)
-# package-lock.json
-# yarn.lock
+# Logs
+logs/
+*.log
